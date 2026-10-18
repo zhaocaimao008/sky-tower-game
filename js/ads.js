@@ -12,13 +12,10 @@
  *     App ID:        ca-app-pub-2490012576999564~6815382791
  *     Rewarded:      ca-app-pub-2490012576999564/4446124343
  *     Interstitial:  ca-app-pub-2490012576999564/2189917083
- *   iOS (Google OFFICIAL TEST ids — replace with real ids from AdMob console):
- *     App ID:        ca-app-pub-3940256099942544~1458002511
- *     Rewarded:      ca-app-pub-3940256099942544/1712485313
- *     Interstitial:  ca-app-pub-3940256099942544/4411468910
- * >>> BEFORE iOS RELEASE: replace the iOS test ids with your own <<<
- *     (AdMob console -> Apps -> Sky Tower (iOS) -> Ad units,
- *      and update GADApplicationIdentifier in ios/App/App/Info.plist)
+ *   iOS (REAL, user's AdMob account):
+ *     App ID:        ca-app-pub-2490012576999564~3778155917
+ *     Rewarded:      ca-app-pub-2490012576999564/8029401277
+ *     Interstitial:  ca-app-pub-2490012576999564/1400238730
  *
  * IAP — product id "skytower_remove_ads" ($2.99, non-consumable).
  *   Android: create in Play Console (Monetize -> Products -> In-app products).
@@ -35,9 +32,9 @@
     },
     ios: {
       // Google official TEST ids — replace before iOS release
-      appId: 'ca-app-pub-3940256099942544~1458002511',
-      rewardedAdId: 'ca-app-pub-3940256099942544/1712485313',
-      interstitialAdId: 'ca-app-pub-3940256099942544/4411468910'
+      appId: 'ca-app-pub-2490012576999564~3778155917',
+      rewardedAdId: 'ca-app-pub-2490012576999564/8029401277',
+      interstitialAdId: 'ca-app-pub-2490012576999564/1400238730'
     }
   };
 
