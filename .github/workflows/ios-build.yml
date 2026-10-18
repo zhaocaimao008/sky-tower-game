@@ -40,13 +40,13 @@ jobs:
       - name: Resolve Swift packages
         working-directory: ios/App
         run: |
-          xcodebuild -resolvePackageDependencies -workspace App.xcworkspace -scheme App -quiet || true
+          xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App -quiet || true
 
       - name: Build (unsigned, device target)
         working-directory: ios/App
         run: |
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
