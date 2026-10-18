@@ -1,0 +1,230 @@
+diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/AdMobPlugin.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/AdMobPlugin.swift
+index 59bcbde..e798b22 100644
+--- a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/AdMobPlugin.swift
++++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/AdMobPlugin.swift
+@@ -102,7 +102,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+ 
+     @MainActor
+     func setWebMediaPlaybackSuspended(_ suspended: Bool) {
+-        self.bridge?.webView?.setAllMediaPlaybackSuspended(suspended, completionHandler: nil)
++        self.bridge?.compat_webView?.setAllMediaPlaybackSuspended(suspended, completionHandler: nil)
+     }
+ 
+     /**
+@@ -123,17 +123,17 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+     }
+ 
+     @objc func setApplicationMuted(_ call: CAPPluginCall) {
+-        if let shouldMute = call.getBool("muted") {
++        if let shouldMute = call.compat_getBool("muted") {
+             MobileAds.shared.isApplicationMuted = shouldMute
+             call.resolve([:])
+         } else {
+-            call.reject("muted property cannot be null")
++            call.compat_reject("muted property cannot be null")
+             return
+         }
+     }
+ 
+     @objc func setApplicationVolume(_ call: CAPPluginCall) {
+-        if var volume = call.getFloat("volume") {
++        if var volume = call.compat_getFloat("volume") {
+             // Clamp volumes.
+             if volume < 0.0 {volume = 0.0} else if volume > 1.0 {volume = 1.0}
+ 
+@@ -141,7 +141,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+ 
+             call.resolve([:])
+         } else {
+-            call.reject("volume property cannot be null")
++            call.compat_reject("volume property cannot be null")
+             return
+         }
+     }
+@@ -161,7 +161,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+      */
+     @objc func prepareInterstitial(_ call: CAPPluginCall) {
+         let adUnitID = getAdId(call, "ca-app-pub-3940256099942544/1033173712")
+-        let request = self.GADRequestWithOption(call.getBool("npa") ?? false)
++        let request = self.GADRequestWithOption(call.compat_getBool("npa") ?? false)
+ 
+         DispatchQueue.main.async {
+             self.adInterstitialExecutor.prepareInterstitial(call, request, adUnitID)
+@@ -180,7 +180,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+      */
+     @objc func prepareRewardVideoAd(_ call: CAPPluginCall) {
+         let adUnitID = getAdId(call, "ca-app-pub-3940256099942544/1712485313")
+-        let request = self.GADRequestWithOption(call.getBool("npa") ?? false)
++        let request = self.GADRequestWithOption(call.compat_getBool("npa") ?? false)
+ 
+         DispatchQueue.main.async {
+             self.adRewardExecutor.prepareRewardVideoAd(call, request, adUnitID)
+@@ -199,7 +199,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+      */
+     @objc func prepareRewardInterstitialAd(_ call: CAPPluginCall) {
+         let adUnitID = getAdId(call, "ca-app-pub-3940256099942544/6978759866")
+-        let request = self.GADRequestWithOption(call.getBool("npa") ?? false)
++        let request = self.GADRequestWithOption(call.compat_getBool("npa") ?? false)
+ 
+         DispatchQueue.main.async {
+             self.adRewardInterstitialExecutor.prepareRewardInterstitialAd(call, request, adUnitID)
+@@ -225,7 +225,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+                 case .notDetermined:
+                     call.resolve(["status": AuthorizationStatusEnum.NotDetermined.rawValue])
+                 @unknown default:
+-                    call.reject("trackingAuthorizationStatus can't get status")
++                    call.compat_reject("trackingAuthorizationStatus can't get status")
+                 }
+             } else {
+                 call.resolve(["status": AuthorizationStatusEnum.Authorized])
+@@ -240,7 +240,7 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+     @objc func requestConsentInfo(_ call: CAPPluginCall) {
+         let debugGeography = call.getInt("debugGeography", 0)
+ 
+-        let testDeviceJSArray = call.getArray("testDeviceIdentifiers") ?? []
++        let testDeviceJSArray = call.compat_getArray("testDeviceIdentifiers") ?? []
+         var testDeviceIdentifiers: [String] = []
+         if testDeviceJSArray.count > 0 {
+             for deviceId in testDeviceJSArray {
+@@ -276,8 +276,8 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+     }
+ 
+     private func getAdId(_ call: CAPPluginCall, _ testingID: String) -> String {
+-        let adUnitID = call.getString("adId") ?? testingID
+-        let isTest = call.getBool("isTesting") ?? false
++        let adUnitID = call.compat_getString("adId") ?? testingID
++        let isTest = call.compat_getBool("isTesting") ?? false
+         if isTest {
+             return testingID
+         }
+@@ -301,20 +301,20 @@ public class AdMobPlugin: CAPPlugin, CAPBridgedPlugin {
+      */
+     private func setRequestConfiguration(_ call: CAPPluginCall) {
+ 
+-        if call.getBool("initializeForTesting") ?? false {
+-            MobileAds.shared.requestConfiguration.testDeviceIdentifiers = call.getArray("testingDevices", String.self) ?? []
++        if call.compat_getBool("initializeForTesting") ?? false {
++            MobileAds.shared.requestConfiguration.testDeviceIdentifiers = call.compat_getArray("testingDevices", ofType: String.self) ?? []
+         }
+ 
+-        if call.getBool("tagForChildDirectedTreatment") == true {
++        if call.compat_getBool("tagForChildDirectedTreatment") == true {
+             MobileAds.shared.requestConfiguration.tagForChildDirectedTreatment = true
+         }
+ 
+-        if call.getBool("tagForUnderAgeOfConsent") == true {
++        if call.compat_getBool("tagForUnderAgeOfConsent") == true {
+             MobileAds.shared.requestConfiguration.tagForUnderAgeOfConsent = true
+         }
+ 
+-        if call.getString("maxAdContentRating") != nil {
+-            switch call.getString("maxAdContentRating") {
++        if call.compat_getString("maxAdContentRating") != nil {
++            switch call.compat_getString("maxAdContentRating") {
+             case "General":
+                 MobileAds.shared.requestConfiguration.maxAdContentRating =
+                     GADMaxAdContentRating.general
+@@ -368,7 +368,7 @@ extension AdMobPlugin {
+ 
+     @objc func showBanner(_ call: CAPPluginCall) {
+         let adUnitID = getAdId(call, "ca-app-pub-3940256099942544/6300978111")
+-        let request = GADRequestWithOption(call.getBool("npa") ?? false)
++        let request = GADRequestWithOption(call.compat_getBool("npa") ?? false)
+         DispatchQueue.main.async {
+             self.bannerExecutor.showBanner(call, request, adUnitID)
+         }
+@@ -397,7 +397,7 @@ extension AdMobPlugin {
+     }
+ 
+     @objc func loadNativeAd(_ call: CAPPluginCall) {
+-        let request = GADRequestWithOption(call.getBool("npa") ?? false)
++        let request = GADRequestWithOption(call.compat_getBool("npa") ?? false)
+         DispatchQueue.main.async {
+             self.nativeAdExecutor.load(call, request: request)
+         }
+diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift
+new file mode 100644
+index 0000000..4f08dd8
+--- /dev/null
++++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift
+@@ -0,0 +1,80 @@
++//
++// CAPCompat.swift
++// Compatibility shims for capacitor-swift-pm >= 8.4 binary distribution,
++// where several Swift convenience APIs on CAPPluginCall / CAPBridgeProtocol
++// are gated behind the $NonescapableTypes experimental feature and are not
++// visible to client plugins. These extensions re-implement the missing
++// methods using the always-available Objective-C APIs.
++//
++
++import Foundation
++import Capacitor
++import WebKit
++
++extension CAPPluginCall {
++
++    // MARK: - Option getters (unconditional variants)
++
++    func compat_getBool(_ key: String) -> Bool? {
++        return (options as? [String: Any])?[key] as? Bool
++    }
++
++    func compat_getString(_ key: String) -> String? {
++        return (options as? [String: Any])?[key] as? String
++    }
++
++    func compat_getInt(_ key: String) -> Int? {
++        let v = (options as? [String: Any])?[key]
++        if let i = v as? Int { return i }
++        if let n = v as? NSNumber { return n.intValue }
++        return nil
++    }
++
++    func compat_getFloat(_ key: String) -> Float? {
++        let v = (options as? [String: Any])?[key]
++        if let f = v as? Float { return f }
++        if let d = v as? Double { return Float(d) }
++        if let n = v as? NSNumber { return n.floatValue }
++        return nil
++    }
++
++    func compat_getDouble(_ key: String) -> Double? {
++        let v = (options as? [String: Any])?[key]
++        if let d = v as? Double { return d }
++        if let n = v as? NSNumber { return n.doubleValue }
++        return nil
++    }
++
++    func compat_getArray(_ key: String) -> [Any]? {
++        return (options as? [String: Any])?[key] as? [Any]
++    }
++
++    func compat_getArray<T>(_ key: String, ofType: T.Type) -> [T]? {
++        return (options as? [String: Any])?[key] as? [T]
++    }
++
++    // MARK: - reject (via errorHandler, since the Swift reject is gated)
++
++    func compat_reject(_ message: String, _ code: String? = nil) {
++        // CAPPluginCallError's Swift init is gated, but the ObjC
++        // -init:message:code:error:data: is exposed via the generated header.
++        let err = CAPPluginCallError(message: message, code: code, error: nil, data: nil)
++        self.errorHandler(err)
++    }
++}
++
++extension CAPBridgeProtocol {
++    /// WKWebView lookup without the gated `webView` property:
++    /// walk down from the bridge's view controller.
++    var compat_webView: WKWebView? {
++        var view: UIView? = self.viewController?.view
++        // BFS through subviews to find the WKWebView
++        var queue: [UIView] = view.map { [$0] } ?? []
++        while !queue.isEmpty {
++            let v = queue.removeFirst()
++            if let wv = v as? WKWebView { return wv }
++            queue.append(contentsOf: v.subviews)
++        }
++        return nil
++    }
++}
