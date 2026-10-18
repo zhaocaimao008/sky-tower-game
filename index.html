@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- Mobile: portrait game. No pinch-zoom (double-tap zoom blocked via touch-action in CSS). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d71bb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" href="data:," />
+  <title>Sky Tower</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ============ HOME ============ -->
+  <section id="screen-home" class="screen active" aria-label="Home">
+    <div class="center-wrap">
+      <div class="panel">
+        <div class="tower-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <h1>Sky Tower</h1>
+        <p class="tagline">Stack blocks. Clear levels. Earn stars.</p>
+        <div class="star-total"><span class="star on">★</span><span id="homeStars">0</span></div>
+        <button id="playBtn" class="primary">Play</button>
+        <button id="dailyBtn" class="daily-card">
+          <span>📅 Daily Challenge</span>
+          <span class="daily-state"></span>
+        </button>
+        <button id="homeHow" class="linklike">How to play</button>
+        <button id="resetBtn" class="linklike">Reset progress</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LEVEL SELECT ============ -->
+  <section id="screen-levels" class="screen" aria-label="Levels">
+    <div class="levels-head">
+      <button id="backHomeBtn" class="icon-btn" aria-label="Back">‹</button>
+      <h2>Levels</h2>
+      <div class="star-total"><span class="star on">★</span><span id="levelsStars">0</span></div>
+    </div>
+    <div id="levelGrid" class="level-grid"></div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="screen-game" class="screen" aria-label="Game">
+    <canvas id="game" aria-label="Sky Tower game canvas"></canvas>
+
+    <div class="safe-ui">
+      <div id="hud" class="hud" aria-live="polite">
+        <div class="hud-left">
+          <div id="hudLabel" class="pill">Level 1</div>
+          <div id="hudHearts" class="pill" aria-label="Hearts"></div>
+        </div>
+        <div class="hud-mid">
+          <span class="score-label">SCORE</span>
+          <span id="hudScore">0</span>
+          <span id="hudProgress">0/8</span>
+        </div>
+        <div class="hud-right">
+          <div class="hud-btns">
+            <button id="pauseBtn" class="round-btn" aria-label="Pause">⏸</button>
+            <button id="muteBtn" class="round-btn" aria-label="Sound">🔊</button>
+          </div>
+          <div id="hudCombo"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- pause -->
+    <div id="pauseOverlay" class="overlay hidden">
+      <div class="panel">
+        <h2 class="over-title">Paused</h2>
+        <div style="height:16px"></div>
+        <button id="resumeBtn" class="primary">Resume</button>
+        <button id="restartBtn" class="secondary">Restart</button>
+        <button id="quitBtn" class="secondary">Quit to Levels</button>
+      </div>
+    </div>
+
+    <!-- result (win / fail) -->
+    <div id="resultOverlay" class="overlay hidden">
+      <div class="panel" id="resultPanel"></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ads.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

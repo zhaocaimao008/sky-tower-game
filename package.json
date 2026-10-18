@@ -1,0 +1,20 @@
+{
+  "name": "game-sky-tower",
+  "version": "1.0.0",
+  "description": "English stacking-tower game, rebuilt as a **hybrid-casual** MVP: 100 levels + daily challenge + stars + local saves, ready to be wrapped into a native app (Capacitor) with AdMob rewarded/interstitial ads and a remove-ads IAP.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "cordova-plugin-purchase": "^13.19.1"
+  }
+}

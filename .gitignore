@@ -1,0 +1,10 @@
+node_modules/
+*.apk
+*.aab
+*.keystore
+keystore-passwords.txt
+android/
+ios/App/build/
+ios/App/Payload/
+*.ipa
+.DS_Store
