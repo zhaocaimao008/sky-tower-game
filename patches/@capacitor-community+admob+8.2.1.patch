@@ -232,44 +232,49 @@ index 037e83e..2112d2d 100644
      }
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift
 new file mode 100644
-index 0000000..7e6c89c
+index 0000000..6f0fb37
 --- /dev/null
 +++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/CAPCompat.swift
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,105 @@
 +//
 +// CAPCompat.swift
 +// Compatibility shims for capacitor-swift-pm >= 8.4 binary distribution,
 +// where several Swift convenience APIs on CAPPluginCall / CAPBridgeProtocol
 +// are gated behind the $NonescapableTypes experimental feature and are not
 +// visible to client plugins. These extensions re-implement the missing
-+// methods using the always-available Objective-C APIs.
++// methods using only unconditionally-available APIs.
 +//
 +
 +import Foundation
 +import Capacitor
 +import WebKit
++import UIKit
 +
 +extension CAPPluginCall {
 +
-+    // MARK: - Option getters (unconditional variants)
++    // MARK: - Option getters
++
++    private var compat_options: [String: Any] {
++        return (options as? [String: Any]) ?? [:]
++    }
 +
 +    func compat_getBool(_ key: String) -> Bool? {
-+        return (options as? [String: Any])?[key] as? Bool
++        return compat_options[key] as? Bool
 +    }
 +
 +    func compat_getString(_ key: String) -> String? {
-+        return (options as? [String: Any])?[key] as? String
++        return compat_options[key] as? String
 +    }
 +
 +    func compat_getInt(_ key: String) -> Int? {
-+        let v = (options as? [String: Any])?[key]
++        let v: Any? = compat_options[key]
 +        if let i = v as? Int { return i }
 +        if let n = v as? NSNumber { return n.intValue }
 +        return nil
 +    }
 +
 +    func compat_getFloat(_ key: String) -> Float? {
-+        let v = (options as? [String: Any])?[key]
++        let v: Any? = compat_options[key]
 +        if let f = v as? Float { return f }
 +        if let d = v as? Double { return Float(d) }
 +        if let n = v as? NSNumber { return n.floatValue }
@@ -277,50 +282,64 @@ index 0000000..7e6c89c
 +    }
 +
 +    func compat_getDouble(_ key: String) -> Double? {
-+        let v = (options as? [String: Any])?[key]
++        let v: Any? = compat_options[key]
 +        if let d = v as? Double { return d }
 +        if let n = v as? NSNumber { return n.doubleValue }
 +        return nil
 +    }
 +
 +    func compat_getArray(_ key: String) -> [Any]? {
-+        return (options as? [String: Any])?[key] as? [Any]
++        return compat_options[key] as? [Any]
 +    }
 +
 +    func compat_getArray<T>(_ key: String, ofType: T.Type) -> [T]? {
-+        return (options as? [String: Any])?[key] as? [T]
++        return compat_options[key] as? [T]
 +    }
 +
-+    // MARK: - reject (via successHandler fallback, since the Swift reject
-+    // and CAPPluginCallError initializers are gated behind $NonescapableTypes
-+    // in capacitor-swift-pm's binary distribution and invisible to plugins).
-+    //
-+    // NOTE: all reject sites in this plugin are input-validation errors that
-+    // the Sky Tower app never triggers (it always passes valid arguments).
-+    // Settling via successHandler with an error payload keeps the JS promise
-+    // from hanging in the impossible case.
++    func compat_getObject(_ key: String) -> [String: Any]? {
++        return compat_options[key] as? [String: Any]
++    }
 +
-+    func compat_reject(_ message: String, _ code: String? = nil) {
-+        NSLog("[AdMobCompat] reject(%@, %@)", message, code ?? "nil")
-+        // init(data:) comes from the ObjC header (always visible).
-+        self.successHandler(CAPPluginCallResult(data: ["success": false, "error": message]), self)
++    // MARK: - reject
++    //
++    // The Swift `reject` and CAPPluginCallError initializers are gated behind
++    // $NonescapableTypes in the binary distribution. All reject sites in this
++    // plugin are input-validation errors that the host app never triggers
++    // (it always passes valid arguments). We log and settle the call via the
++    // unconditionally-available `resolve()` so the JS promise never hangs.
++
++    func compat_reject(_ message: String, _ code: String? = nil, _ error: Error? = nil) {
++        NSLog("[AdMobCompat] reject: %@ (code %@)", message, code ?? "nil")
++        self.resolve()
 +    }
 +}
 +
 +extension CAPBridgeProtocol {
-+    /// WKWebView lookup without the gated `webView` property:
-+    /// walk down from the bridge's view controller.
++    /// WKWebView lookup without the gated `webView` / `viewController`
++    /// properties: walk the key window's view hierarchy.
 +    var compat_webView: WKWebView? {
-+        var view: UIView? = self.viewController?.view
-+        // BFS through subviews to find the WKWebView
-+        var queue: [UIView] = view.map { [$0] } ?? []
-+        while !queue.isEmpty {
-+            let v = queue.removeFirst()
-+            if let wv = v as? WKWebView { return wv }
-+            queue.append(contentsOf: v.subviews)
++        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
++        for scene in scenes {
++            for window in scene.windows where window.isKeyWindow {
++                if let wv = CAPCompatFindWebView(in: window) { return wv }
++            }
++        }
++        // Fallback: any window
++        for scene in scenes {
++            for window in scene.windows {
++                if let wv = CAPCompatFindWebView(in: window) { return wv }
++            }
 +        }
 +        return nil
 +    }
++}
++
++private func CAPCompatFindWebView(in view: UIView) -> WKWebView? {
++    if let wv = view as? WKWebView { return wv }
++    for sub in view.subviews {
++        if let wv = CAPCompatFindWebView(in: sub) { return wv }
++    }
++    return nil
 +}
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift
 index 0de7fbb..08692a4 100644
@@ -410,7 +429,7 @@ index a28fa9e..134447a 100644
          }
      }
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdExecutor.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdExecutor.swift
-index 427daf7..17fc1e8 100644
+index 427daf7..a4b42c3 100644
 --- a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdExecutor.swift
 +++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdExecutor.swift
 @@ -58,7 +58,7 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
@@ -445,15 +464,17 @@ index 427daf7..17fc1e8 100644
              return
          }
          pending[identifier] = Pending(
-@@ -112,7 +112,7 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
+@@ -112,8 +112,8 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
              feedId: feedId,
              sessionId: sessionId,
              slotKey: slotKey,
 -            template: call.getString("template") ?? "medium",
+-            style: call.getObject("style") ?? [:]
 +            template: call.compat_getString("template") ?? "medium",
-             style: call.getObject("style") ?? [:]
++            style: call.compat_getObject("style") ?? [:]
          )
          loader.delegate = self
+         loader.load(request)
 @@ -128,7 +128,7 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
              call.resolve()
              return
@@ -529,11 +550,13 @@ index 427daf7..17fc1e8 100644
          }
          for stateKey in states.filter({ $0.value.feedId == feedId }).keys {
              destroyState(stateKey)
-@@ -300,7 +300,7 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
+@@ -299,8 +299,8 @@ final class NativeAdExecutor: NSObject, NativeAdLoaderDelegate, NativeAdDelegate
+ 
  extension NativeAdExecutor {
      private func updateTrackedPlacements(_ call: CAPPluginCall, feedId: String) -> Bool {
-         guard let container = call.getObject("scrollContainer") else { return false }
+-        guard let container = call.getObject("scrollContainer") else { return false }
 -        let placements = (call.getArray("placements") ?? []).compactMap { value -> NativeAdPlacementValue? in
++        guard let container = call.compat_getObject("scrollContainer") else { return false }
 +        let placements = (call.compat_getArray("placements") ?? []).compactMap { value -> NativeAdPlacementValue? in
              guard let value = value as? [String: Any] else { return nil }
              return NativeAdPlacementValue(value, expectedFeedId: feedId)
@@ -564,23 +587,25 @@ index 427daf7..17fc1e8 100644
  
      func nativeAdDidRecordClick(_ nativeAd: NativeAd) {
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdValues.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdValues.swift
-index 90e3011..b057c68 100644
+index 90e3011..5560cc9 100644
 --- a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdValues.swift
 +++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/NativeAds/NativeAdValues.swift
-@@ -11,7 +11,7 @@ enum NativeAdValues {
+@@ -10,8 +10,8 @@ enum NativeAdValues {
+     }
  
      static func requiredString(_ call: CAPPluginCall, _ name: String) -> String? {
-         guard let value = call.getString(name)?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+-        guard let value = call.getString(name)?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
 -            call.reject("\(name) must not be empty")
++        guard let value = call.compat_getString(name)?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
 +            call.compat_reject("\(name) must not be empty")
              return nil
          }
          return value
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Rewarded/AdRewardExecutor.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Rewarded/AdRewardExecutor.swift
-index be49cdf..8c86a7e 100644
+index be49cdf..5ff83e0 100644
 --- a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Rewarded/AdRewardExecutor.swift
 +++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Rewarded/AdRewardExecutor.swift
-@@ -19,12 +19,12 @@ class AdRewardExecutor: NSObject, FullScreenContentDelegate {
+@@ -19,16 +19,16 @@ class AdRewardExecutor: NSObject, FullScreenContentDelegate {
                          "code": (error as NSError).code,
                          "message": error.localizedDescription
                      ])
@@ -595,6 +620,11 @@ index be49cdf..8c86a7e 100644
                      return
                  }
  
+-                if let providedOptions = call.getObject("ssv") {
++                if let providedOptions = call.compat_getObject("ssv") {
+                     let ssvOptions = ServerSideVerificationOptions()
+ 
+                     if let customData = providedOptions["customData"] as? String {
 @@ -71,12 +71,12 @@ class AdRewardExecutor: NSObject, FullScreenContentDelegate {
      }
  
@@ -621,10 +651,10 @@ index be49cdf..8c86a7e 100644
          }
      }
 diff --git a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/RewardedInterstitial/AdRewardInterstitialExecutor.swift b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/RewardedInterstitial/AdRewardInterstitialExecutor.swift
-index 587524d..2aacf4d 100644
+index 587524d..a9af1ec 100644
 --- a/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/RewardedInterstitial/AdRewardInterstitialExecutor.swift
 +++ b/node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/RewardedInterstitial/AdRewardInterstitialExecutor.swift
-@@ -19,12 +19,12 @@ class AdRewardInterstitialExecutor: NSObject, FullScreenContentDelegate {
+@@ -19,16 +19,16 @@ class AdRewardInterstitialExecutor: NSObject, FullScreenContentDelegate {
                          "code": (error as NSError).code,
                          "message": error.localizedDescription
                      ])
@@ -639,6 +669,11 @@ index 587524d..2aacf4d 100644
                      return
                  }
  
+-                if let providedOptions = call.getObject("ssv") {
++                if let providedOptions = call.compat_getObject("ssv") {
+                     let ssvOptions = ServerSideVerificationOptions()
+ 
+                     if let customData = providedOptions["customData"] as? String {
 @@ -71,12 +71,12 @@ class AdRewardInterstitialExecutor: NSObject, FullScreenContentDelegate {
      }
  
